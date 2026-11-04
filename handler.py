@@ -10,6 +10,19 @@ from PIL import Image
 import runpod
 from huggingface_hub import snapshot_download
 from trellis2.pipelines import Trellis2ImageTo3DPipeline
+import trellis2.models as _tm
+
+# Guarda o erro REAL de cada parte da IA (a biblioteca esconde o primeiro erro e mostra só um 404 genérico).
+_ERRS = []
+_orig_fp = _tm.from_pretrained
+def _fp(path, **kw):
+    try:
+        return _orig_fp(path, **kw)
+    except Exception:
+        _ERRS.append(f'{path}: ' + traceback.format_exc()[-1200:])
+        print('[xynz] falha ao carregar', path, traceback.format_exc(), flush=True)
+        raise
+_tm.from_pretrained = _fp
 
 T0 = time.time()
 
@@ -40,7 +53,7 @@ def ensure():
             PIPE = load_pipeline(); LOAD_ERR = ''
             print(f'[xynz] modelo carregado em {time.time() - T0:.1f}s', flush=True)
         except Exception as e:
-            LOAD_ERR = str(e)[:400]; traceback.print_exc()
+            LOAD_ERR = ((_ERRS[0] + ' || ') if _ERRS else '') + str(e)[:400]; traceback.print_exc()
             if 'dinov3' in LOAD_ERR.lower() or 'gated' in LOAD_ERR.lower() or '403' in LOAD_ERR:
                 try:
                     from huggingface_hub import snapshot_download as sd
