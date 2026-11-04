@@ -3,7 +3,7 @@
 FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1 \
     TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0" CUDA_HOME=/usr/local/cuda MAX_JOBS=4 \
-    ATTN_BACKEND=xformers SPARSE_ATTN_BACKEND=xformers PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True HF_HOME=/hf
+    ATTN_BACKEND=xformers SPARSE_ATTN_BACKEND=xformers PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True HF_HOME=/hf PYTHONPATH=/app/TRELLIS.2
 RUN apt-get update && apt-get install -y --no-install-recommends python3.10 python3.10-dev python3-pip git ninja-build libgl1 libglib2.0-0 libjpeg-dev libeigen3-dev \
  && ln -sf /usr/bin/python3.10 /usr/bin/python && ln -sf /usr/include/eigen3/Eigen /usr/include/Eigen && ln -sf /usr/include/eigen3/unsupported /usr/include/unsupported && rm -rf /var/lib/apt/lists/*
 RUN python -m pip install -U pip wheel setuptools \
