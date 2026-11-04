@@ -11,6 +11,14 @@ import runpod
 from huggingface_hub import snapshot_download
 from trellis2.pipelines import Trellis2ImageTo3DPipeline
 import trellis2.models as _tm
+# O FlashAttention 3 do xformers só tem kernel para H100; em outras placas (Blackwell etc.) ele derruba o processo
+# com "no kernel image is available". Desligado: o xformers usa FlashAttention 2 / cutlass, que funcionam em todas.
+try:
+    from xformers.ops.fmha import dispatch as _xd
+    _xd._set_use_fa3(False)
+    print('[xynz] xformers sem FA3 · placa', torch.cuda.get_device_name(0), torch.cuda.get_device_capability(0), flush=True)
+except Exception as _e:
+    print('[xynz] aviso: não consegui ajustar o xformers:', _e, flush=True)
 
 # Guarda o erro REAL de cada parte da IA (a biblioteca esconde o primeiro erro e mostra só um 404 genérico).
 _ERRS = []
