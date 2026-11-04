@@ -28,7 +28,14 @@ T0 = time.time()
 
 def load_pipeline():
     tok = os.environ.get('HF_TOKEN') or None
-    root = snapshot_download('microsoft/TRELLIS.2-4B', token=tok, allow_patterns=['pipeline.json', '*.md', 'ckpts/ss_*', 'ckpts/shape_*', 'ckpts/slat_flow_img2shape_*'])
+    root = None
+    try:  # modelo já guardado na máquina pela RunPod (Cached Models): liga em segundos, sem baixar
+        root = snapshot_download('microsoft/TRELLIS.2-4B', cache_dir='/runpod-volume/huggingface-cache/hub', local_files_only=True)
+        print('[xynz] modelo principal vindo do cache da RunPod', flush=True)
+    except Exception as e:
+        print('[xynz] sem cache da RunPod, baixando:', str(e)[:120], flush=True)
+    if not root:
+        root = snapshot_download('microsoft/TRELLIS.2-4B', token=tok, allow_patterns=['pipeline.json', '*.md', 'ckpts/ss_*', 'ckpts/shape_*', 'ckpts/slat_flow_img2shape_*'])
     cfg = json.load(open(os.path.join(root, 'pipeline.json')))
     a = cfg['args']
     for k in ['tex_slat_decoder', 'tex_slat_flow_model_512', 'tex_slat_flow_model_1024']:
