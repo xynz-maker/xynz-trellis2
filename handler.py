@@ -99,7 +99,12 @@ def handler(job):
         img = img.convert('RGBA') if img.mode in ('RGBA', 'LA', 'P') else img.convert('RGB')
         quality = str(inp.get('quality', '1536'))
         faces = int(inp.get('faces', 400000))
-        m = make_shape(img, quality, int(inp.get('seed', 42)))
+        try:
+            m = make_shape(img, quality, int(inp.get('seed', 42)))
+        except torch.cuda.OutOfMemoryError:
+            if quality == '512': raise
+            torch.cuda.empty_cache(); print('[xynz] pouca memória na placa: refazendo em 1024', flush=True)
+            quality = '1024'; m = make_shape(img, quality, int(inp.get('seed', 42)))
         if m.faces.shape[0] > faces:
             m.simplify(faces)
         v = m.vertices.detach().cpu().numpy().astype(np.float32)
@@ -109,7 +114,7 @@ def handler(job):
         up = requests.post(inp['upload_url'], headers={'X-Xynz-Sig': inp.get('upload_sig', '')},
                            files={'file': ('modelo.glb', glb, 'model/gltf-binary')}, timeout=120)
         ok = up.status_code == 200 and up.json().get('ok')
-        return {'ok': bool(ok), 'faces': int(f.shape[0]), 'verts': int(v.shape[0]), 'secs': round(time.time() - t, 1),
+        return {'ok': bool(ok), 'quality': quality, 'faces': int(f.shape[0]), 'verts': int(v.shape[0]), 'secs': round(time.time() - t, 1),
                 'upload': up.text[:300] if not ok else ''}
     except Exception as e:
         traceback.print_exc()
